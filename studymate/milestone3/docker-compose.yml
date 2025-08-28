@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    env_file:
+      - .env.example
+    environment:
+      IBM_URL: ${IBM_URL}
+      IBM_API_KEY: ${IBM_API_KEY}
+      IBM_PROJECT_ID: ${IBM_PROJECT_ID}
+      SPACE_ID: ${SPACE_ID}
+      MODEL_ID: ${MODEL_ID}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src:/app/src
+    command: uvicorn src.api.app:app --host 0.0.0.0 --port 8080 --reload
+
+
+
