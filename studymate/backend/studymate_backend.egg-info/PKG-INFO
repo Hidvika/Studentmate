@@ -1,0 +1,389 @@
+Metadata-Version: 2.4
+Name: studymate-backend
+Version: 0.1.0
+Summary: StudyMate backend services (FastAPI)
+Author-email: StudyMate <dev@studymate.local>
+License: MIT
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.111.0
+Requires-Dist: uvicorn[standard]>=0.30.0
+Requires-Dist: pydantic>=2.7.1
+Requires-Dist: pydantic-settings>=2.3.4
+Requires-Dist: sqlalchemy>=2.0.30
+Requires-Dist: alembic>=1.13.2
+Requires-Dist: psycopg[binary]>=3.1.19
+Requires-Dist: asyncpg>=0.29.0
+Requires-Dist: boto3>=1.34.130
+Requires-Dist: minio>=7.2.7
+Requires-Dist: python-dotenv>=1.0.1
+Requires-Dist: faiss-cpu>=1.8.0.post1
+Requires-Dist: sentence-transformers>=3.0.1
+Requires-Dist: numpy>=1.26.4
+Requires-Dist: scikit-learn>=1.4.2
+Requires-Dist: pymupdf>=1.24.4
+Requires-Dist: pdfminer.six>=20231228
+Requires-Dist: pypdf>=4.2.0
+Requires-Dist: ftfy>=6.2.0
+Requires-Dist: regex>=2024.5.15
+Requires-Dist: httpx>=0.27.0
+Requires-Dist: redis>=5.0.4
+Requires-Dist: orjson>=3.10.3
+Requires-Dist: sse-starlette>=2.1.0
+Requires-Dist: ibm-watsonx-ai>=0.1.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.2.1; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23.6; extra == "dev"
+Requires-Dist: ruff>=0.5.0; extra == "dev"
+Requires-Dist: black>=24.4.2; extra == "dev"
+Requires-Dist: mypy>=1.10.0; extra == "dev"
+Requires-Dist: types-requests>=2.32.0.20240523; extra == "dev"
+
+# StudyMate - RAG Web Application
+
+A production-ready RAG (Retrieval-Augmented Generation) web application for academic document analysis and Q&A.
+
+## Features
+
+- **PDF Processing**: Extract, normalize, and chunk PDF documents
+- **Vector Search**: FAISS-based similarity search with HNSW indexing
+- **RAG Chat**: WatsonX-powered chat with citations
+- **Streaming Responses**: Real-time streaming chat responses
+- **Multi-document Support**: Upload and index multiple PDFs
+- **Citation Tracking**: Automatic source citation with page references
+
+## Architecture
+
+### Services
+1. **Ingestion Service**: PDF → Text → Chunks → Embeddings → FAISS Index
+2. **Retrieval Service**: Vector search with metadata
+3. **Chat Service**: RAG-based Q&A with streaming
+4. **Frontend**: Next.js UI with file upload and chat interface
+
+### Tech Stack
+- **Backend**: Python 3.11, FastAPI, SQLAlchemy, Uvicorn
+- **Database**: PostgreSQL (documents, chunks, chats, citations)
+- **Vector DB**: FAISS (HNSW/FlatIP)
+- **Storage**: S3/MinIO (PDFs and chunk data)
+- **Embeddings**: Sentence-transformers (BAAI/bge-small-en-v1.5) or WatsonX
+- **LLM**: IBM WatsonX.ai (Granite or equivalent)
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Infrastructure**: Docker, docker-compose
+
+## Quick Start
+
+### Prerequisites
+- Docker and docker-compose
+- Python 3.11+ (for local development)
+
+### Environment Setup
+
+Create a `.env` file in the root directory:
+
+```bash
+# App
+APP_ENV=dev
+DEBUG=true
+
+# Database
+POSTGRES_URL=postgresql+psycopg://studymate:studymate@db:5432/studymate
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# S3/MinIO
+S3_ENDPOINT=http://minio:9000
+S3_BUCKET=studymate
+S3_ACCESS_KEY=studymate
+S3_SECRET_KEY=studymate
+S3_REGION=us-east-1
+
+# Embeddings
+EMBEDDINGS_BACKEND=sentence-transformers
+EMBEDDINGS_MODEL=BAAI/bge-small-en-v1.5
+
+# WatsonX (optional)
+WATSONX_API_KEY=your_api_key
+WATSONX_PROJECT_ID=your_project_id
+WATSONX_MODEL_ID=granite-13b-instruct-v2
+WATSONX_URL=https://us-south.ml.cloud.ibm.com
+
+# Chunking
+CHUNK_SIZE=500
+CHUNK_OVERLAP=100
+
+# Search
+DEFAULT_TOP_K=5
+MAX_TOP_K=20
+
+# File upload
+MAX_FILE_SIZE_MB=50
+
+# Frontend
+NEXT_PUBLIC_API_BASE=http://localhost:8000
+```
+
+### Running with Docker
+
+1. **Start all services**:
+```bash
+cd studymate/deploy
+docker-compose up -d
+```
+
+2. **Access services**:
+- Frontend: http://localhost:3000
+- API: http://localhost:8000
+- MinIO Console: http://localhost:9001
+- API Docs: http://localhost:8000/docs
+
+3. **Initialize database** (first time only):
+```bash
+# The database will be automatically initialized on first run
+```
+
+### Local Development
+
+1. **Backend setup**:
+```bash
+cd studymate/backend
+pip install -e .[dev]
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+2. **Frontend setup**:
+```bash
+cd studymate/frontend
+npm install
+npm run dev
+```
+
+## API Documentation
+
+### Ingestion Endpoints
+
+#### POST /ingest
+Upload PDF documents for processing.
+
+**Request**: `multipart/form-data`
+- `files[]`: PDF files
+
+**Response**:
+```json
+{
+  "document_ids": ["uuid1", "uuid2"],
+  "status": "accepted"
+}
+```
+
+#### GET /ingest/{document_id}/status
+Get processing status of a document.
+
+**Response**:
+```json
+{
+  "status": "processing|indexed|failed",
+  "stats": {
+    "pages": 10,
+    "chunks": 25
+  }
+}
+```
+
+### Search Endpoints
+
+#### POST /search
+Search for relevant chunks using vector similarity.
+
+**Request**:
+```json
+{
+  "query": "What is machine learning?",
+  "k": 5
+}
+```
+
+**Response**:
+```json
+{
+  "hits": [
+    {
+      "chunk_id": "uuid",
+      "document_id": "uuid",
+      "filename": "paper.pdf",
+      "page_start": 1,
+      "page_end": 2,
+      "text": "Machine learning is...",
+      "score": 0.85,
+      "chunk_index": 0
+    }
+  ],
+  "total_hits": 5,
+  "query": "What is machine learning?"
+}
+```
+
+### Chat Endpoints
+
+#### POST /chat
+Get RAG-based response with citations.
+
+**Request**:
+```json
+{
+  "query": "What is machine learning?",
+  "chat_id": "optional_uuid",
+  "top_k": 5
+}
+```
+
+**Response**:
+```json
+{
+  "chat_id": "uuid",
+  "message_id": "uuid",
+  "answer": "Machine learning is a subset of artificial intelligence...",
+  "citations": [
+    {
+      "document_id": "uuid",
+      "chunk_id": "uuid",
+      "filename": "paper.pdf",
+      "page_start": 1,
+      "page_end": 2,
+      "score": 0.85
+    }
+  ]
+}
+```
+
+#### POST /chat/stream
+Streaming chat endpoint with Server-Sent Events.
+
+**Request**: Same as `/chat`
+
+**Response**: SSE stream with events:
+- `token`: Streaming text tokens
+- `done`: Final response with citations
+- `error`: Error messages
+
+## Usage Examples
+
+### 1. Upload Documents
+```bash
+curl -X POST "http://localhost:8000/ingest" \
+  -H "Content-Type: multipart/form-data" \
+  -F "files=@document1.pdf" \
+  -F "files=@document2.pdf"
+```
+
+### 2. Search for Information
+```bash
+curl -X POST "http://localhost:8000/search" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is deep learning?", "k": 5}'
+```
+
+### 3. Chat with Documents
+```bash
+curl -X POST "http://localhost:8000/chat" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Explain the main concepts in the uploaded documents"}'
+```
+
+## Configuration
+
+### Embeddings Backend
+- **sentence-transformers**: Local embeddings using BAAI/bge-small-en-v1.5
+- **watsonx**: IBM WatsonX embeddings (requires API credentials)
+
+### Chunking Strategy
+- **Chunk Size**: 500 words per chunk
+- **Overlap**: 100 words between chunks
+- **Sliding Window**: Ensures context continuity
+
+### Vector Search
+- **Index Type**: HNSW (if available) or FlatIP
+- **Similarity**: Cosine similarity with L2-normalized vectors
+- **Default Results**: 5 chunks per query
+
+## Development
+
+### Project Structure
+```
+studymate/
+├── backend/
+│   ├── app/
+│   │   ├── api/           # FastAPI routers
+│   │   ├── core/          # Configuration
+│   │   ├── db/            # Database models
+│   │   ├── ingestion/     # PDF processing
+│   │   ├── retrieval/     # Vector search
+│   │   ├── llm/           # WatsonX client
+│   │   └── s3/            # Storage client
+│   ├── tests/             # Test suite
+│   └── pyproject.toml     # Dependencies
+├── frontend/              # Next.js UI
+├── deploy/                # Docker configuration
+└── README.md
+```
+
+### Testing
+```bash
+# Backend tests
+cd studymate/backend
+pytest
+
+# Frontend tests
+cd studymate/frontend
+npm test
+```
+
+### Code Quality
+```bash
+# Backend
+cd studymate/backend
+ruff check
+black .
+mypy .
+
+# Frontend
+cd studymate/frontend
+npm run lint
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Database Connection**: Ensure PostgreSQL is running and accessible
+2. **MinIO Access**: Check MinIO credentials and bucket creation
+3. **WatsonX API**: Verify API key and project ID for WatsonX features
+4. **Memory Issues**: Large PDFs may require more memory allocation
+
+### Logs
+```bash
+# View all service logs
+docker-compose logs -f
+
+# View specific service
+docker-compose logs -f api
+```
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+
+## Support
+
+For issues and questions:
+- Create an issue in the repository
+- Check the troubleshooting section
+- Review the API documentation

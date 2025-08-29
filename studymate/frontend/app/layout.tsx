@@ -1,21 +1,22 @@
-import { ReactNode } from 'react';
-import './globals.css';
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
 
-export const metadata = {
-  title: 'StudyMate',
-  description: 'RAG UI for StudyMate',
-};
+const inter = Inter({ subsets: ['latin'] })
 
-interface RootLayoutProps {
-  children: ReactNode;
+export const metadata: Metadata = {
+  title: 'StudyMate - AI Document Analysis',
+  description: 'Upload your documents and chat with an AI assistant powered by RAG technology',
 }
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
-      <body>{children}
-        
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
-  );
+  )
 }
