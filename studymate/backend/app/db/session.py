@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
 # Convert sync URL to async
-async_url = settings.postgres_url.replace("postgresql://", "postgresql+asyncpg://")
+async_url = settings.postgres_url.replace("postgresql+psycopg://", "postgresql+asyncpg://")
 
 engine = create_async_engine(
     async_url,

@@ -50,16 +50,16 @@ export function Chat({ chatId }: ChatProps) {
     setInput('')
     setIsLoading(true)
 
-    try {
-      // Create assistant message placeholder
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: '',
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, assistantMessage])
+    // Create assistant message placeholder
+    const assistantMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: '',
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, assistantMessage])
 
+    try {
       // Stream the response
       const eventSource = api.chatStream({
         query: userMessage.content,

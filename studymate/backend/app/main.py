@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ingestion, search, chat
+from app.api import ingestion, search, chat, auth, crud
 
 
 def create_app() -> FastAPI:
@@ -19,6 +19,8 @@ def create_app() -> FastAPI:
     app.include_router(ingestion.router)
     app.include_router(search.router)
     app.include_router(chat.router)
+    app.include_router(auth.router)
+    app.include_router(crud.router)
 
     @app.get("/health")
     def health() -> dict[str, str]:
